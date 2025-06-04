@@ -1,106 +1,162 @@
 const express = require('express');
-const cors = require('cors');
-const dotenv = require('dotenv');
 const axios = require('axios');
-
+const cors = require('cors'); // Ajout du package CORS
 const app = express();
-dotenv.config();
 
-const PORT = process.env.PORT;
+const config = {
+    region: 'eu',
+    namespace: 'static-classic-eu',
+    locale: 'fr_FR'
+};
 
-// Middleware
+require('dotenv').config();
+
+// Middleware pour autoriser les requêtes cross-origin
 app.use(cors());
+
+// Middleware pour parser les requêtes JSON
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-// Routes
-app.get('/', (req, res) => {
-    res.json({
-        message: 'Bienvenue sur le serveur Express minimaliste !',
-        timestamp: new Date().toISOString(),
-        endpoints: [
-            'GET / - Cette page',
-            'GET /api/health - Vérification de l\'état du serveur',
-            'GET /api/hello/:name - Salutation personnalisée',
-            'GET /api/wow/item?search=nom&orderby=id&page=1 - Recherche d\'items WoW'
-        ]
-    });
-});
-
-app.get('/api/wow/item/:id', async (req, res) => {
-    try{
-
-        const {id} = req.params;
-        const url=`https://eu.api.blizzard.com/data/wow/item/${id}?namespace=static-classic-eu&locale=fr_FR`
-        let response;
-        try{
-            response = await axios({
-                method: 'get',
-                url: url,
-                headers: {
-                    'Authorization': `Bearer ${process.env.API_KEY}`
-                }
-            })
-        } catch (error) {
-            console.error('Erreur lors de l\'appel à l\'API Blizzard:', error);
-            res.status(500).json({
-                error: 'Erreur lors de la récupération des données',
-                message: error.message
-            });
-        }
-
-        res.json(response.data)
-
+// Route 1 : Item Classes Index
+app.get('/api/wow/item-class', async (req, res) => {
+    try {
+        const url = `https://${config.region}.api.blizzard.com/data/wow/item-class/index?namespace=${config.namespace}&locale=${config.locale}`;
+        const response = await axios({
+            method: 'get',
+            url: url,
+            headers: {
+                'Authorization': `Bearer ${process.env.API_KEY}`
+            }
+        });
+        res.json(response.data);
     } catch (error) {
-        console.error('Erreur lors de l\'appel à l\'API Blizzard:', error);
+        console.error('Erreur lors de l\'appel à l\'API Blizzard (Item Classes Index):', error);
         res.status(500).json({
             error: 'Erreur lors de la récupération des données',
             message: error.message
         });
     }
-})
-
-
-
-app.get('/api/health', (req, res) => {
-    res.json({
-        status: 'OK',
-        uptime: process.uptime(),
-        timestamp: new Date().toISOString()
-    });
 });
 
-app.get('/api/hello/:name', (req, res) => {
-    const { name } = req.params;
-    res.json({
-        message: `Bonjour ${name} !`,
-        timestamp: new Date().toISOString()
-    });
+// Route 2 : Item Class by ID
+app.get('/api/wow/item-class/:itemClassId', async (req, res) => {
+    try {
+        const { itemClassId } = req.params;
+        const url = `https://${config.region}.api.blizzard.com/data/wow/item-class/${itemClassId}?namespace=${config.namespace}&locale=${config.locale}`;
+        const response = await axios({
+            method: 'get',
+            url: url,
+            headers: {
+                'Authorization': `Bearer ${process.env.API_KEY}`
+            }
+        });
+        res.json(response.data);
+    } catch (error) {
+        console.error('Erreur lors de l\'appel à l\'API Blizzard (Item Class):', error);
+        res.status(500).json({
+            error: 'Erreur lors de la récupération des données',
+            message: error.message
+        });
+    }
 });
 
-// Gestion des erreurs 404
-app.use((req, res) => {
-    res.status(404).json({
-        error: 'Route non trouvée',
-        path: req.path,
-        method: req.method
-    });
+// Route 3 : Item Subclass by ID
+app.get('/api/wow/item-class/:itemClassId/item-subclass/:itemSubclassId', async (req, res) => {
+    try {
+        const { itemClassId, itemSubclassId } = req.params;
+        const url = `https://${config.region}.api.blizzard.com/data/wow/item-class/${itemClassId}/item-subclass/${itemSubclassId}?namespace=${config.namespace}&locale=${config.locale}`;
+        const response = await axios({
+            method: 'get',
+            url: url,
+            headers: {
+                'Authorization': `Bearer ${process.env.API_KEY}`
+            }
+        });
+        res.json(response.data);
+    } catch (error) {
+        console.error('Erreur lors de l\'appel à l\'API Blizzard (Item Subclass):', error);
+        res.status(500).json({
+            error: 'Erreur lors de la récupération des données',
+            message: error.message
+        });
+    }
 });
 
-// Gestion des erreurs globales
-app.use((err, req, res, next) => {
-    console.error(err.stack);
-    res.status(500).json({
-        error: 'Erreur interne du serveur',
-        message: process.env.NODE_ENV === 'development' ? err.message : 'Une erreur s\'est produite'
-    });
+// Route 4 : Item by ID
+app.get('/api/wow/item/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const url = `https://${config.region}.api.blizzard.com/data/wow/item/${id}?namespace=${config.namespace}&locale=${config.locale}`;
+        const response = await axios({
+            method: 'get',
+            url: url,
+            headers: {
+                'Authorization': `Bearer ${process.env.API_KEY}`
+            }
+        });
+        res.json(response.data);
+    } catch (error) {
+        console.error('Erreur lors de l\'appel à l\'API Blizzard (Item):', error);
+        res.status(500).json({
+            error: 'Erreur lors de la récupération des données',
+            message: error.message
+        });
+    }
 });
 
-// Démarrage du serveur
+// Route 5 : Item Media by ID
+app.get('/api/wow/item-media/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const url = `https://${config.region}.api.blizzard.com/data/wow/media/item/${id}?namespace=${config.namespace}&locale=${config.locale}`;
+        const response = await axios({
+            method: 'get',
+            url: url,
+            headers: {
+                'Authorization': `Bearer ${process.env.API_KEY}`
+            }
+        });
+        res.json(response.data);
+    } catch (error) {
+        console.error('Erreur lors de l\'appel à l\'API Blizzard (Item Media):', error);
+        res.status(500).json({
+            error: 'Erreur lors de la récupération des données',
+            message: error.message
+        });
+    }
+});
+
+// Route 6 : Item Search
+app.get('/api/wow/search/item', async (req, res) => {
+    try {
+        // Récupérer les paramètres de requête (query params)
+        const { name, orderby, _page } = req.query;
+
+        // Construire l'URL avec les paramètres
+        let url = `https://${config.region}.api.blizzard.com/data/wow/search/item?namespace=${config.namespace}&locale=${config.locale}`;
+        if (name) url += `&name.fr_FR=${encodeURIComponent(name)}`; // Recherche par nom
+        if (orderby) url += `&orderby=${encodeURIComponent(orderby)}`; // Tri
+        if (_page) url += `&_page=${encodeURIComponent(_page)}`; // Pagination
+
+        const response = await axios({
+            method: 'get',
+            url: url,
+            headers: {
+                'Authorization': `Bearer ${process.env.API_KEY}`
+            }
+        });
+        res.json(response.data);
+    } catch (error) {
+        console.error('Erreur lors de l\'appel à l\'API Blizzard (Item Search):', error);
+        res.status(500).json({
+            error: 'Erreur lors de la récupération des données',
+            message: error.message
+        });
+    }
+});
+
+// Démarrer le serveur (exemple de port)
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`🚀 Serveur Express démarré sur http://localhost:${PORT}`);
-    console.log(`📊 Mode: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`⏰ Démarré à: ${new Date().toLocaleString('fr-FR')}`);
+    console.log(`Serveur démarré sur le port ${PORT}`);
 });
-
-module.exports = app;
