@@ -2,6 +2,7 @@ const express = require("express");
 const session = require("express-session");
 const cors = require("cors");
 const passport = require("passport");
+const configuration = require("./config/configuration");
 require("dotenv").config();
 
 // Importation des routes
@@ -22,7 +23,7 @@ app.use(express.json());
 // Middleware pour les sessions
 app.use(
     session({
-        secret: "votre_secret_session",
+        secret: process.env.SESSION_SECRET,
         resave: false,
         saveUninitialized: false,
         cookie: { secure: false, sameSite: "lax" },
@@ -38,7 +39,7 @@ app.use("/auth", authRoutes);
 app.use("/api/wow", wowRoutes);
 
 // Démarrer le serveur
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT;
 app.listen(PORT, () => {
     console.log(`Serveur démarré sur le port ${PORT}`);
 });

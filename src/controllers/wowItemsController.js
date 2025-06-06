@@ -1,14 +1,10 @@
 const axios = require("axios");
+const configuration = require("../config/configuration");
 
-const config = {
-    region: "eu",
-    namespace: "static-classic-eu",
-    locale: "fr_FR",
-};
 
 const getItemClasses = async (req, res) => {
     try {
-        const url = `https://${config.region}.api.blizzard.com/data/wow/item-class/index?namespace=${config.namespace}&locale=${config.locale}`;
+        const url = `https://${configuration.region}.${configuration.baseUrl}/item-class/index?namespace=${configuration.namespace}&locale=${configuration.locale}`;
         const response = await axios({
             method: "get",
             url: url,
@@ -29,7 +25,7 @@ const getItemClasses = async (req, res) => {
 const getItemClassById = async (req, res) => {
     try {
         const { itemClassId } = req.params;
-        const url = `https://${config.region}.api.blizzard.com/data/wow/item-class/${itemClassId}?namespace=${config.namespace}&locale=${config.locale}`;
+        const url = `https://${configuration.region}.${configuration.baseUrl}/item-class/${itemClassId}?namespace=${configuration.namespace}&locale=${configuration.locale}`;
         const response = await axios({
             method: "get",
             url: url,
@@ -50,7 +46,7 @@ const getItemClassById = async (req, res) => {
 const getItemSubclass = async (req, res) => {
     try {
         const { itemClassId, itemSubclassId } = req.params;
-        const url = `https://${config.region}.api.blizzard.com/data/wow/item-class/${itemClassId}/item-subclass/${itemSubclassId}?namespace=${config.namespace}&locale=${config.locale}`;
+        const url = `https://${configuration.region}.${configuration.baseUrl}/item-class/${itemClassId}/item-subclass/${itemSubclassId}?namespace=${configuration.namespace}&locale=${configuration.locale}`;
         const response = await axios({
             method: "get",
             url: url,
@@ -71,7 +67,7 @@ const getItemSubclass = async (req, res) => {
 const getItemById = async (req, res) => {
     try {
         const { id } = req.params;
-        const url = `https://${config.region}.api.blizzard.com/data/wow/item/${id}?namespace=${config.namespace}&locale=${config.locale}`;
+        const url = `https://${configuration.region}.${configuration.baseUrl}/item/${id}?namespace=${configuration.namespace}&locale=${configuration.locale}`;
         const response = await axios({
             method: "get",
             url: url,
@@ -92,7 +88,7 @@ const getItemById = async (req, res) => {
 const getItemMedia = async (req, res) => {
     try {
         const { id } = req.params;
-        const url = `https://${config.region}.api.blizzard.com/data/wow/media/item/${id}?namespace=${config.namespace}&locale=${config.locale}`;
+        const url = `https://${configuration.region}.${configuration.baseUrl}/media/item/${id}?namespace=${configuration.namespace}&locale=${configuration.locale}`;
         const response = await axios({
             method: "get",
             url: url,
@@ -113,7 +109,7 @@ const getItemMedia = async (req, res) => {
 const searchItems = async (req, res) => {
     try {
         const { name, orderby, _page } = req.query;
-        let url = `https://${config.region}.api.blizzard.com/data/wow/search/item?namespace=${config.namespace}&locale=${config.locale}`;
+        let url = `https://${configuration.region}.${configuration.baseUrl}/search/item?namespace=${configuration.namespace}&locale=${configuration.locale}`;
         if (name) url += `&name.fr_FR=${encodeURIComponent(name)}`;
         if (orderby) url += `&orderby=${encodeURIComponent(orderby)}`;
         if (_page) url += `&_page=${encodeURIComponent(_page)}`;
