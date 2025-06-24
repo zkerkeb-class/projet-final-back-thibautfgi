@@ -1,7 +1,6 @@
 const axios = require("axios");
 const configuration = require("../config/configuration");
 
-
 const getItemClasses = async (req, res) => {
     try {
         const url = `https://${configuration.region}.${configuration.baseUrl}/item-class/index?namespace=${configuration.namespace}&locale=${configuration.locale}`;
@@ -108,11 +107,28 @@ const getItemMedia = async (req, res) => {
 
 const searchItems = async (req, res) => {
     try {
-        const { name, orderby, _page } = req.query;
+        const { name, orderby, _page, _pageSize, itemClass } = req.query;
+
+        console.log('Paramètres reçus:', { name, orderby, _page, _pageSize, itemClass }); // Log des paramètres
+
         let url = `https://${configuration.region}.${configuration.baseUrl}/search/item?namespace=${configuration.namespace}&locale=${configuration.locale}`;
-        if (name) url += `&name.fr_FR=${encodeURIComponent(name)}`;
+
+        if (name) {
+            // Ajouter des guillemets pour recherche par phrase et encoder correctement
+            const rawName = name.includes(' ') ? `"${name}"` : name;
+            url += `&name.fr_FR=${encodeURIComponent(rawName)}`; // Encoder une seule fois
+            console.log('Nom encodé pour l\'API:', encodeURIComponent(rawName));
+        }
         if (orderby) url += `&orderby=${encodeURIComponent(orderby)}`;
         if (_page) url += `&_page=${encodeURIComponent(_page)}`;
+        if (_pageSize) url += `&_pageSize=${encodeURIComponent(_pageSize)}`;
+
+        // Ajout du filtre itemClass
+        if (itemClass) {
+            url += `&filters=item_class.id:${encodeURIComponent(itemClass)}`;
+        }
+
+        console.log('URL de recherche construite:', url);
 
         const response = await axios({
             method: "get",
@@ -121,6 +137,8 @@ const searchItems = async (req, res) => {
                 Authorization: `Bearer ${req.session.accessToken}`,
             },
         });
+
+        console.log('Réponse de l\'API Blizzard:', response.data);
         res.json(response.data);
     } catch (error) {
         console.error("Erreur lors de l'appel à l'API Blizzard (Item Search):", error);
