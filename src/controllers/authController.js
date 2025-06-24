@@ -25,7 +25,7 @@ const authCallback = [
 // Vérifier le statut
 const checkStatus = (req, res) => {
     if (req.isAuthenticated()) {
-        res.json({ message: "Connecté", user: req.user.battletag });
+        res.json({ message: "Connecté", user: req.user.battletag, accessToken: req.session.accessToken });
     } else {
         res.json({ message: "Non connecté" });
     }
