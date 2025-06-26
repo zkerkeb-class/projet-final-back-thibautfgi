@@ -13,10 +13,13 @@ const { ensureAuthenticated } = require("../middlewares/authMiddleware");
 //  ITEMS
 router.get("/item-class", ensureAuthenticated, wowItemsController.getItemClasses);
 router.get("/item-class/:itemClassId", ensureAuthenticated, wowItemsController.getItemClassById);
-router.get("/item-class/:itemClassId/item-subclass/:itemSubclassId", ensureAuthenticated, wowItemsController.getItemSubclass);
+router.get("/item-class/:itemClassId/item-subclass/:itemSubclassId", ensureAuthenticated, wowItemsController.getItemSubclassById);
 router.get("/item/:id", ensureAuthenticated, wowItemsController.getItemById);
 router.get("/item-media/:id", ensureAuthenticated, wowItemsController.getItemMedia);
 router.get("/search/item", ensureAuthenticated, wowItemsController.searchItems);
+router.post("/item", ensureAuthenticated, wowItemsController.postItem);
+router.get("/inventory", ensureAuthenticated, wowItemsController.getInventory);
+router.delete("/item/:id", ensureAuthenticated, wowItemsController.deleteItem);
 //
 //
 //

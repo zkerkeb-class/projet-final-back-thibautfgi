@@ -1,5 +1,14 @@
 const axios = require("axios");
 const configuration = require("../config/configuration");
+const mongoose = require("mongoose"); // Add Mongoose
+
+// Define the Item schema
+const itemSchema = new mongoose.Schema({
+    itemId: { type: Number, required: true, unique: true }, // Store the item ID
+    createdAt: { type: Date, default: Date.now }, // Optional: Track when saved
+});
+
+const Item = mongoose.model("Item", itemSchema); // Create the model
 
 const getItemClasses = async (req, res) => {
     try {
@@ -42,7 +51,7 @@ const getItemClassById = async (req, res) => {
     }
 };
 
-const getItemSubclass = async (req, res) => {
+const getItemSubclassById = async (req, res) => {
     try {
         const { itemClassId, itemSubclassId } = req.params;
         const url = `https://${configuration.region}.${configuration.baseUrl}/item-class/${itemClassId}/item-subclass/${itemSubclassId}?namespace=${configuration.namespace}&locale=${configuration.locale}`;
@@ -109,21 +118,19 @@ const searchItems = async (req, res) => {
     try {
         const { name, orderby, _page, _pageSize, itemClass } = req.query;
 
-        console.log('Paramètres reçus:', { name, orderby, _page, _pageSize, itemClass }); // Log des paramètres
+        console.log('Paramètres reçus:', { name, orderby, _page, _pageSize, itemClass });
 
         let url = `https://${configuration.region}.${configuration.baseUrl}/search/item?namespace=${configuration.namespace}&locale=${configuration.locale}`;
 
         if (name) {
-            // Ajouter des guillemets pour recherche par phrase et encoder correctement
             const rawName = name.includes(' ') ? `"${name}"` : name;
-            url += `&name.fr_FR=${encodeURIComponent(rawName)}`; // Encoder une seule fois
+            url += `&name.fr_FR=${encodeURIComponent(rawName)}`;
             console.log('Nom encodé pour l\'API:', encodeURIComponent(rawName));
         }
         if (orderby) url += `&orderby=${encodeURIComponent(orderby)}`;
         if (_page) url += `&_page=${encodeURIComponent(_page)}`;
         if (_pageSize) url += `&_pageSize=${encodeURIComponent(_pageSize)}`;
 
-        // Ajout du filtre itemClass
         if (itemClass) {
             url += `&filters=item_class.id:${encodeURIComponent(itemClass)}`;
         }
@@ -149,11 +156,63 @@ const searchItems = async (req, res) => {
     }
 };
 
+// New endpoint to save item ID to MongoDB
+const postItem = async (req, res) => {
+    try {
+        const { id } = req.body;
+        if (!id) {
+            return res.status(400).json({ error: "ID is required" });
+        }
+
+        const existingItem = await Item.findOne({ itemId: id });
+        if (existingItem) {
+            return res.status(409).json({ error: "Item already exists" });
+        }
+
+        const newItem = new Item({ itemId: id });
+        await newItem.save();
+        res.status(201).json({ message: "Item saved successfully", id });
+    } catch (error) {
+        console.error("Error saving item to MongoDB:", error);
+        res.status(500).json({
+            error: "Error saving item",
+            message: error.message,
+        });
+    }
+};
+
+const getInventory = async (req, res) => {
+    try {
+        const items = await Item.find({}, 'itemId'); // Fetch only itemId field
+        res.json(items.map(item => item.itemId));
+    } catch (error) {
+        console.error("Error fetching inventory from MongoDB:", error);
+        res.status(500).json({ error: "Error fetching inventory", message: error.message });
+    }
+};
+
+const deleteItem = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const result = await Item.deleteOne({ itemId: parseInt(id) });
+        if (result.deletedCount === 0) {
+            return res.status(404).json({ error: "Item not found" });
+        }
+        res.status(200).json({ message: "Item deleted successfully", id });
+    } catch (error) {
+        console.error("Error deleting item from MongoDB:", error);
+        res.status(500).json({ error: "Error deleting item", message: error.message });
+    }
+};
+
 module.exports = {
     getItemClasses,
     getItemClassById,
-    getItemSubclass,
+    getItemSubclassById,
     getItemById,
     getItemMedia,
     searchItems,
+    postItem,
+    getInventory,
+    deleteItem
 };
