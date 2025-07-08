@@ -8,4 +8,5 @@ router.get("/bnet/callback", authController.authCallback);
 router.get("/status", authController.checkStatus);
 router.get("/logout", authController.logout);
 
+
 module.exports = router;

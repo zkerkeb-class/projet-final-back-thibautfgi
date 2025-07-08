@@ -4,7 +4,7 @@ const cors = require("cors");
 const passport = require("passport");
 const configuration = require("./config/configuration");
 require("dotenv").config();
-const mongoose = require("mongoose"); // Add Mongoose
+const mongoose = require("mongoose");
 
 // Importation des routes
 const authRoutes = require("./routes/authRoutes");
@@ -44,6 +44,38 @@ app.use(
 // Initialisation de Passport
 app.use(passport.initialize());
 app.use(passport.session());
+
+// Middleware pour enregistrer ou mettre à jour l'utilisateur après authentification
+app.use((req, res, next) => {
+    if (req.user && req.session.accessToken) {
+        const { User } = require('./controllers/wowItemsController'); // Importation dynamique
+        User.findOne({ id_user: req.user.id })
+            .then(existingUser => {
+                if (!existingUser) {
+                    const newUser = new User({
+                        id_user: req.user.id,
+                        blizzardAccountName: req.user.battletag,
+                        isAdmin: false, // Par défaut
+                        isBan: false   // Par défaut
+                    });
+                    return newUser.save()
+                        .then(savedUser => {
+                            console.log(`User ${req.user.id} saved`);
+                            // Mettre à jour req.user avec les données complètes
+                            req.user = { ...req.user, isAdmin: savedUser.isAdmin, isBan: savedUser.isBan };
+                        })
+                        .catch(err => console.error("Error saving user:", err));
+                } else {
+                    // Mettre à jour req.user avec les données actuelles de la base
+                    req.user = { ...req.user, isAdmin: existingUser.isAdmin, isBan: existingUser.isBan };
+                }
+            })
+            .catch(err => console.error("Error checking user:", err))
+            .finally(() => next());
+    } else {
+        next();
+    }
+});
 
 // Utilisation des routes
 app.use("/auth", authRoutes);

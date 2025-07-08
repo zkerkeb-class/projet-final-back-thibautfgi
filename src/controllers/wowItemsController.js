@@ -1,14 +1,24 @@
 const axios = require("axios");
 const configuration = require("../config/configuration");
-const mongoose = require("mongoose"); // Add Mongoose
+const mongoose = require("mongoose");
 
 // Define the Item schema
 const itemSchema = new mongoose.Schema({
-    itemId: { type: Number, required: true, unique: true }, // Store the item ID
+    itemId: { type: Number, required: true, unique: true }, // Unique item ID
+    id_user: { type: String, required: true, ref: 'User' }, // Reference to User id_user
     createdAt: { type: Date, default: Date.now }, // Optional: Track when saved
 });
+const Item = mongoose.model("Item", itemSchema);
 
-const Item = mongoose.model("Item", itemSchema); // Create the model
+// Define the User schema with isBan
+const userSchema = new mongoose.Schema({
+    id_user: { type: String, required: true, unique: true }, // Unique ID from Blizzard/Passport
+    blizzardAccountName: { type: String, required: true },   // Blizzard account name (battletag)
+    isAdmin: { type: Boolean, required: true, default: false }, // Statut admin par défaut false
+    isBan: { type: Boolean, required: true, default: false }, // Statut ban par défaut false
+    createdAt: { type: Date, default: Date.now }            // Optional: Track creation time
+});
+const User = mongoose.model("User", userSchema);
 
 const getItemClasses = async (req, res) => {
     try {
@@ -16,17 +26,12 @@ const getItemClasses = async (req, res) => {
         const response = await axios({
             method: "get",
             url: url,
-            headers: {
-                Authorization: `Bearer ${req.session.accessToken}`,
-            },
+            headers: { Authorization: `Bearer ${req.session.accessToken}` },
         });
         res.json(response.data);
     } catch (error) {
         console.error("Erreur lors de l'appel à l'API Blizzard (Item Classes Index):", error);
-        res.status(500).json({
-            error: "Erreur lors de la récupération des données",
-            message: error.message,
-        });
+        res.status(500).json({ error: "Erreur lors de la récupération des données", message: error.message });
     }
 };
 
@@ -37,17 +42,12 @@ const getItemClassById = async (req, res) => {
         const response = await axios({
             method: "get",
             url: url,
-            headers: {
-                Authorization: `Bearer ${req.session.accessToken}`,
-            },
+            headers: { Authorization: `Bearer ${req.session.accessToken}` },
         });
         res.json(response.data);
     } catch (error) {
         console.error("Erreur lors de l'appel à l'API Blizzard (Item Class):", error);
-        res.status(500).json({
-            error: "Erreur lors de la récupération des données",
-            message: error.message,
-        });
+        res.status(500).json({ error: "Erreur lors de la récupération des données", message: error.message });
     }
 };
 
@@ -58,17 +58,12 @@ const getItemSubclassById = async (req, res) => {
         const response = await axios({
             method: "get",
             url: url,
-            headers: {
-                Authorization: `Bearer ${req.session.accessToken}`,
-            },
+            headers: { Authorization: `Bearer ${req.session.accessToken}` },
         });
         res.json(response.data);
     } catch (error) {
         console.error("Erreur lors de l'appel à l'API Blizzard (Item Subclass):", error);
-        res.status(500).json({
-            error: "Erreur lors de la récupération des données",
-            message: error.message,
-        });
+        res.status(500).json({ error: "Erreur lors de la récupération des données", message: error.message });
     }
 };
 
@@ -79,17 +74,12 @@ const getItemById = async (req, res) => {
         const response = await axios({
             method: "get",
             url: url,
-            headers: {
-                Authorization: `Bearer ${req.session.accessToken}`,
-            },
+            headers: { Authorization: `Bearer ${req.session.accessToken}` },
         });
         res.json(response.data);
     } catch (error) {
         console.error("Erreur lors de l'appel à l'API Blizzard (Item):", error);
-        res.status(500).json({
-            error: "Erreur lors de la récupération des données",
-            message: error.message,
-        });
+        res.status(500).json({ error: "Erreur lors de la récupération des données", message: error.message });
     }
 };
 
@@ -100,17 +90,12 @@ const getItemMedia = async (req, res) => {
         const response = await axios({
             method: "get",
             url: url,
-            headers: {
-                Authorization: `Bearer ${req.session.accessToken}`,
-            },
+            headers: { Authorization: `Bearer ${req.session.accessToken}` },
         });
         res.json(response.data);
     } catch (error) {
         console.error("Erreur lors de l'appel à l'API Blizzard (Item Media):", error);
-        res.status(500).json({
-            error: "Erreur lors de la récupération des données",
-            message: error.message,
-        });
+        res.status(500).json({ error: "Erreur lors de la récupération des données", message: error.message });
     }
 };
 
@@ -140,50 +125,48 @@ const searchItems = async (req, res) => {
         const response = await axios({
             method: "get",
             url: url,
-            headers: {
-                Authorization: `Bearer ${req.session.accessToken}`,
-            },
+            headers: { Authorization: `Bearer ${req.session.accessToken}` },
         });
 
         console.log('Réponse de l\'API Blizzard:', response.data);
         res.json(response.data);
     } catch (error) {
         console.error("Erreur lors de l'appel à l'API Blizzard (Item Search):", error);
-        res.status(500).json({
-            error: "Erreur lors de la récupération des données",
-            message: error.message,
-        });
+        res.status(500).json({ error: "Erreur lors de la récupération des données", message: error.message });
     }
 };
 
-// New endpoint to save item ID to MongoDB
+// Updated endpoint to save item ID to MongoDB with user association
 const postItem = async (req, res) => {
     try {
         const { id } = req.body;
         if (!id) {
             return res.status(400).json({ error: "ID is required" });
         }
-
-        const existingItem = await Item.findOne({ itemId: id });
-        if (existingItem) {
-            return res.status(409).json({ error: "Item already exists" });
+        if (!req.user || !req.user.id) {
+            return res.status(401).json({ error: "User not authenticated" });
         }
 
-        const newItem = new Item({ itemId: id });
+        const existingItem = await Item.findOne({ itemId: id, id_user: req.user.id });
+        if (existingItem) {
+            return res.status(409).json({ error: "Item already exists for this user" });
+        }
+
+        const newItem = new Item({ itemId: id, id_user: req.user.id });
         await newItem.save();
         res.status(201).json({ message: "Item saved successfully", id });
     } catch (error) {
         console.error("Error saving item to MongoDB:", error);
-        res.status(500).json({
-            error: "Error saving item",
-            message: error.message,
-        });
+        res.status(500).json({ error: "Error saving item", message: error.message });
     }
 };
 
 const getInventory = async (req, res) => {
     try {
-        const items = await Item.find({}, 'itemId'); // Fetch only itemId field
+        if (!req.user || !req.user.id) {
+            return res.status(401).json({ error: "User not authenticated" });
+        }
+        const items = await Item.find({ id_user: req.user.id }, 'itemId');
         res.json(items.map(item => item.itemId));
     } catch (error) {
         console.error("Error fetching inventory from MongoDB:", error);
@@ -194,14 +177,58 @@ const getInventory = async (req, res) => {
 const deleteItem = async (req, res) => {
     try {
         const { id } = req.params;
-        const result = await Item.deleteOne({ itemId: parseInt(id) });
+        if (!req.user || !req.user.id) {
+            return res.status(401).json({ error: "User not authenticated" });
+        }
+        const result = await Item.deleteOne({ itemId: parseInt(id), id_user: req.user.id });
         if (result.deletedCount === 0) {
-            return res.status(404).json({ error: "Item not found" });
+            return res.status(404).json({ error: "Item not found or not owned by user" });
         }
         res.status(200).json({ message: "Item deleted successfully", id });
     } catch (error) {
         console.error("Error deleting item from MongoDB:", error);
         res.status(500).json({ error: "Error deleting item", message: error.message });
+    }
+};
+
+const getUsers = async (req, res) => {
+    try {
+        const users = await User.find({ isAdmin: false }, 'id_user blizzardAccountName isAdmin isBan'); // Filtrer les non-admins
+        res.status(200).json(users);
+    } catch (error) {
+        console.error("Error fetching users:", error);
+        res.status(500).json({ error: "Error fetching users", message: error.message });
+    }
+};
+
+const updateUserBan = async (req, res) => {
+    try {
+        const { id_user } = req.params;
+        const { isBan } = req.body;
+        const updatedUser = await User.findOneAndUpdate(
+            { id_user },
+            { isBan },
+            { new: true, runValidators: true }
+        );
+        if (!updatedUser) {
+            return res.status(404).json({ error: "User not found" });
+        }
+        res.status(200).json({ message: "User ban status updated", user: updatedUser });
+    } catch (error) {
+        console.error("Error updating user ban status:", error);
+        res.status(500).json({ error: "Error updating user ban status", message: error.message });
+    }
+};
+
+
+const getInventoryByUser = async (req, res) => {
+    try {
+        const { id_user } = req.params;
+        const items = await Item.find({ id_user }, 'itemId');
+        res.json(items.map(item => item.itemId));
+    } catch (error) {
+        console.error("Error fetching inventory for user:", error);
+        res.status(500).json({ error: "Error fetching inventory", message: error.message });
     }
 };
 
@@ -214,5 +241,9 @@ module.exports = {
     searchItems,
     postItem,
     getInventory,
-    deleteItem
+    deleteItem,
+    User,
+    getUsers,
+    updateUserBan,
+    getInventoryByUser
 };
